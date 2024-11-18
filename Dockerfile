@@ -1,34 +1,37 @@
-# syntax=docker/dockerfile:1
-FROM python:3.10-bullseye
+# Base image used as starter
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
-# Expose the required port
-EXPOSE 6969
+# Install necessary dependencies
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+    python3-pip \
+    git \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    wget \
+    curl \
+    iproute2 \
+    iputils-ping \
+    python3.10-venv \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set up working directory
-WORKDIR /app
+# Update pip
+RUN pip install -U --no-cache-dir pip setuptools wheel
 
-# Install system dependencies, clean up cache to keep image size small
-RUN apt update && \
-    apt install -y -qq ffmpeg && \
-    apt clean && rm -rf /var/lib/apt/lists/*
+# Change working directory
+WORKDIR /src
 
-# Copy application files into the container
+# Copy content to image
 COPY . .
 
-# Create a virtual environment in the app directory and install dependencies
-RUN python3 -m venv /app/.venv && \
-    . /app/.venv/bin/activate && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir python-ffmpeg && \
+# Install dependencies
+RUN pip install --no-cache-dir python-ffmpeg && \
     pip install --no-cache-dir torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121 && \
-    if [ -f "requirements.txt" ]; then pip install --no-cache-dir -r requirements.txt; fi
+    pip install --no-cache-dir -r requirements.txt
 
-# Define volumes for persistent storage
-VOLUME ["/app/logs/"]
-
-# Set environment variables if necessary
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Run the app
-ENTRYPOINT ["python3"]
-CMD ["app.py"]
+# Symlink python
+RUN ln -n /usr/bin/python3 /usr/bin/python

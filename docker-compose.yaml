@@ -1,12 +1,16 @@
-version: '1'
-
 services:
+
   applio:
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    image: iahispano/applio:latest
+    build: .
+    working_dir: /app
+    volumes:
+      - .:/app
     ports:
-      - "6969"
+      - 6969:6969
+    command: ["python3", "app.py", "--open", "--share"]
+    tty: true
+    shm_size: 2gb
     deploy:
       resources:
         reservations:
