@@ -1,13 +1,14 @@
 services:
 
   applio:
+    container_name: applio
     image: iahispano/applio:latest
     build: .
     working_dir: /app
     volumes:
       - .:/app
     ports:
-      - 6969:6969
+      - 8200:6969
     command: ["python3", "app.py", "--open", "--share"]
     tty: true
     shm_size: 2gb
