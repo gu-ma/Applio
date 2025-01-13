@@ -16,13 +16,14 @@ from tabs.inference.inference import (
     get_indexes,
     get_speakers_id,
     match_index,
-    names,
     refresh_embedders_folders,
+    extract_model_and_epoch,
+    names,
+    default_weight,
 )
 
 i18n = I18nAuto()
 
-default_weight = random.choice(names) if names else ""
 
 with open(
     os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8"
@@ -50,7 +51,7 @@ def tts_tab():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(names, key=lambda path: os.path.getsize(path)),
+                choices=sorted(names, key=lambda x: extract_model_and_epoch(x)),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,
@@ -93,7 +94,7 @@ def tts_tab():
         info=i18n("Select the TTS voice to use for the conversion."),
         choices=short_names,
         interactive=True,
-        value=None,
+        value=random.choice(short_names),
     )
 
     tts_rate = gr.Slider(
@@ -330,6 +331,21 @@ def tts_tab():
                 visible=True,
             )
 
+    def enforce_terms(terms_accepted, *args):
+        if not terms_accepted:
+            message = "You must agree to the Terms of Use to proceed."
+            gr.Info(message)
+            return message, None
+        return run_tts_script(*args)
+
+    terms_checkbox = gr.Checkbox(
+        label=i18n("I agree to the terms of use"),
+        info=i18n(
+            "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
+        ),
+        value=False,
+        interactive=True,
+    )
     convert_button = gr.Button(i18n("Convert"))
 
     with gr.Row():
@@ -383,8 +399,9 @@ def tts_tab():
         outputs=[embedder_model_custom],
     )
     convert_button.click(
-        fn=run_tts_script,
+        fn=enforce_terms,
         inputs=[
+            terms_checkbox,
             input_tts_path,
             tts_text,
             tts_voice,

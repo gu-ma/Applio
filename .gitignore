@@ -16,7 +16,7 @@
 *.safetensors
 
 logs
+rvc/models
 env
 venv
 .venv
-rvc/models

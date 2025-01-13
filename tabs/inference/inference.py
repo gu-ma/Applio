@@ -62,6 +62,8 @@ names = [
     )
 ]
 
+default_weight = names[0] if names else None
+
 indexes_list = [
     os.path.join(root, name)
     for root, _, files in os.walk(model_root_relative, topdown=False)
@@ -239,6 +241,15 @@ def get_indexes():
     return indexes_list if indexes_list else ""
 
 
+def extract_model_and_epoch(path):
+    base_name = os.path.basename(path)
+    match = re.match(r"(.+?)_(\d+)e_", base_name)
+    if match:
+        model, epoch = match.groups()
+        return model, int(epoch)
+    return "", 0
+
+
 def save_to_wav(record_button):
     if record_button is None:
         pass
@@ -337,13 +348,12 @@ def get_speakers_id(model):
 
 # Inference tab
 def inference_tab():
-    default_weight = names[0] if names else None
     with gr.Column():
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(names, key=lambda path: os.path.getsize(path)),
+                choices=sorted(names, key=lambda x: extract_model_and_epoch(x)),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,
@@ -369,7 +379,6 @@ def inference_tab():
                 inputs=[],
                 outputs=[model_file, index_file],
             )
-
             model_file.select(
                 fn=lambda model_file_value: match_index(model_file_value),
                 inputs=[model_file],
@@ -538,7 +547,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_damping = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -548,7 +556,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_wet_gain = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -558,7 +565,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_dry_gain = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -568,7 +574,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_width = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -578,7 +583,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_freeze_mode = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -620,7 +624,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 limiter_release_time = gr.Slider(
                     minimum=0.01,
                     maximum=1,
@@ -678,7 +681,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_depth = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -688,7 +690,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_center_delay = gr.Slider(
                     minimum=7,
                     maximum=8,
@@ -698,7 +699,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_feedback = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -708,7 +708,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_mix = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -766,7 +765,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 compressor_ratio = gr.Slider(
                     minimum=1,
                     maximum=20,
@@ -776,7 +774,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 compressor_attack = gr.Slider(
                     minimum=0.0,
                     maximum=100,
@@ -786,7 +783,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 compressor_release = gr.Slider(
                     minimum=0.01,
                     maximum=100,
@@ -812,7 +808,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 delay_feedback = gr.Slider(
                     minimum=0.0,
                     maximum=1.0,
@@ -822,7 +817,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 delay_mix = gr.Slider(
                     minimum=0.0,
                     maximum=1.0,
@@ -1011,6 +1005,29 @@ def inference_tab():
                     visible=True,
                 )
 
+        def enforce_terms(terms_accepted, *args):
+            if not terms_accepted:
+                message = "You must agree to the Terms of Use to proceed."
+                gr.Info(message)
+                return message, None
+            return run_infer_script(*args)
+
+        def enforce_terms_batch(terms_accepted, *args):
+            if not terms_accepted:
+                message = "You must agree to the Terms of Use to proceed."
+                gr.Info(message)
+                return message, None
+            return run_batch_infer_script(*args)
+
+        terms_checkbox = gr.Checkbox(
+            label=i18n("I agree to the terms of use"),
+            info=i18n(
+                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
+            ),
+            value=False,
+            interactive=True,
+        )
+
         convert_button1 = gr.Button(i18n("Convert"))
 
         with gr.Row():
@@ -1173,7 +1190,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_damping_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1183,7 +1199,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_wet_gain_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1193,7 +1208,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_dry_gain_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1203,7 +1217,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_width_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1213,7 +1226,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 reverb_freeze_mode_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1255,7 +1267,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 limiter_release_time_batch = gr.Slider(
                     minimum=0.01,
                     maximum=1,
@@ -1313,7 +1324,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_depth_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1323,7 +1333,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_center_delay_batch = gr.Slider(
                     minimum=7,
                     maximum=8,
@@ -1333,7 +1342,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_feedback_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1343,7 +1351,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 chorus_mix_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1401,7 +1408,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 compressor_ratio_batch = gr.Slider(
                     minimum=1,
                     maximum=20,
@@ -1411,7 +1417,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 compressor_attack_batch = gr.Slider(
                     minimum=0.0,
                     maximum=100,
@@ -1421,7 +1426,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 compressor_release_batch = gr.Slider(
                     minimum=0.01,
                     maximum=100,
@@ -1447,7 +1451,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 delay_feedback_batch = gr.Slider(
                     minimum=0.0,
                     maximum=1.0,
@@ -1457,7 +1460,6 @@ def inference_tab():
                     interactive=True,
                     visible=False,
                 )
-
                 delay_mix_batch = gr.Slider(
                     minimum=0.0,
                     maximum=1.0,
@@ -1647,7 +1649,15 @@ def inference_tab():
                             i18n("Move files to custom embedder folder")
                         )
 
-        convert_button2 = gr.Button(i18n("Convert"))
+        terms_checkbox_batch = gr.Checkbox(
+            label=i18n("I agree to the terms of use"),
+            info=i18n(
+                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
+            ),
+            value=False,
+            interactive=True,
+        )
+        convert_button_batch = gr.Button(i18n("Convert"))
         stop_button = gr.Button(i18n("Stop convert"), visible=False)
         stop_button.click(fn=stop_infer, inputs=[], outputs=[])
 
@@ -1793,7 +1803,6 @@ def inference_tab():
             delay,
         ],
     )
-
     reverb.change(
         fn=reverb_visible,
         inputs=[reverb],
@@ -1878,7 +1887,6 @@ def inference_tab():
             delay_batch,
         ],
     )
-
     reverb_batch.change(
         fn=reverb_visible,
         inputs=[reverb_batch],
@@ -2032,8 +2040,9 @@ def inference_tab():
         outputs=[embedder_model_custom_batch],
     )
     convert_button1.click(
-        fn=run_infer_script,
+        fn=enforce_terms,
         inputs=[
+            terms_checkbox,
             pitch,
             filter_radius,
             index_rate,
@@ -2097,9 +2106,10 @@ def inference_tab():
         ],
         outputs=[vc_output1, vc_output2],
     )
-    convert_button2.click(
-        fn=run_batch_infer_script,
+    convert_button_batch.click(
+        fn=enforce_terms_batch,
         inputs=[
+            terms_checkbox_batch,
             pitch_batch,
             filter_radius_batch,
             index_rate_batch,
@@ -2163,13 +2173,13 @@ def inference_tab():
         ],
         outputs=[vc_output3],
     )
-    convert_button2.click(
+    convert_button_batch.click(
         fn=enable_stop_convert_button,
         inputs=[],
-        outputs=[convert_button2, stop_button],
+        outputs=[convert_button_batch, stop_button],
     )
     stop_button.click(
         fn=disable_stop_convert_button,
         inputs=[],
-        outputs=[convert_button2, stop_button],
+        outputs=[convert_button_batch, stop_button],
     )
