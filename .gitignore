@@ -20,3 +20,4 @@ rvc/models
 env
 venv
 .venv
+.gradio
