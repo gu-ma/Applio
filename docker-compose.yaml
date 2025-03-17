@@ -7,8 +7,10 @@ services:
     working_dir: /app
     volumes:
       - .:/app
+      - ${HF_HOME}:/root/.cache/
+      - ${TORCH_HOME}:/root/.cache/huggingfacetorch
     ports:
-      - 8200:6969
+      - ${APPLIO_PORT}:6969
     command: ["python3", "app.py", "--open", "--share"]
     tty: true
     shm_size: 2gb
