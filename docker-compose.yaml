@@ -7,8 +7,8 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-      - ${HF_HOME}:/root/.cache/
-      - ${TORCH_HOME}:/root/.cache/huggingfacetorch
+      - ${HF_HOME}:/root/.cache/huggingface
+      - ${TORCH_HOME}:/root/.cache/torch
     ports:
       - ${APPLIO_PORT}:6969
     command: ["python3", "app.py", "--open", "--share"]
