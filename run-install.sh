@@ -158,21 +158,38 @@ if [ "$(uname)" = "Darwin" ]; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    # Check installed Python version and install the correct Homebrew Python version (macOS)
-    python_version=$(python3 --version | awk '{print $2}' | cut -d'.' -f1,2)
-    if [ "$python_version" = "3.9" ]; then
-        log_message "Python 3.9 detected. Installing Python 3.10 using Homebrew..."
+    # Add more detailed Python version check
+    log_message "Checking Python versions..."
+    log_message "python3 path: $(which python3)"
+    log_message "python3.10 path: $(which python3.10 2>/dev/null || echo 'not found')"
+    
+    if command -v python3.10 >/dev/null 2>&1; then
+        python_version=$(python3.10 --version | awk '{print $2}' | cut -d'.' -f1,2)
+    else
+        python_version=$(python3 --version | awk '{print $2}' | cut -d'.' -f1,2)
+    fi
+    
+    log_message "Detected Python version: $python_version"
+
+    if [ "$python_version" = "3.10" ]; then
+        log_message "Found compatible Python 3.10"
+    else
+        log_message "Python version $python_version is not 3.10. Installing Python 3.10 using Homebrew..."
         brew install python@3.10
-        export PATH="/opt/homebrew/opt/python@3.10/bin:$PATH"
-    elif [ "$python_version" != "3.10" ]; then
-        log_message "Unsupported Python version detected: $python_version. Please use Python 3.10."
-        exit 1
+        export PATH="$(brew --prefix)/opt/python@3.10/bin:$PATH"
+        # Verify the installed version
+        log_message "Verifying installed Python version..."
+        python_version=$(python3.10 --version | awk '{print $2}' | cut -d'.' -f1,2)
+        if [ "$python_version" != "3.10" ]; then
+            log_message "Failed to install Python 3.10. Current version: $python_version"
+            exit 1
+        fi
     fi
 
     brew install faiss
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
-    export PATH="/opt/homebrew/bin:$PATH"  
+    export PATH="$(brew --prefix)/bin:$PATH"  
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"

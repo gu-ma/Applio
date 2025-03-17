@@ -206,7 +206,6 @@ class VoiceConverter:
         split_audio: bool = False,
         f0_autotune: bool = False,
         f0_autotune_strength: float = 1,
-        filter_radius: int = 3,
         embedder_model: str = "contentvec",
         embedder_model_custom: str = None,
         clean_audio: bool = False,
@@ -222,7 +221,6 @@ class VoiceConverter:
 
         Args:
             pitch (int): Key for F0 up-sampling.
-            filter_radius (int): Radius for filtering.
             index_rate (float): Rate for index matching.
             volume_envelope (int): RMS mix rate.
             protect (float): Protection rate for certain audio segments.
@@ -299,7 +297,6 @@ class VoiceConverter:
                     file_index=file_index,
                     index_rate=index_rate,
                     pitch_guidance=self.use_f0,
-                    filter_radius=filter_radius,
                     volume_envelope=volume_envelope,
                     version=self.version,
                     protect=protect,
@@ -313,7 +310,9 @@ class VoiceConverter:
                     print(f"Converted audio chunk {len(converted_chunks)}")
 
             if split_audio:
-                audio_opt = merge_audio(chunks, converted_chunks, intervals, 16000, self.tgt_sr)
+                audio_opt = merge_audio(
+                    chunks, converted_chunks, intervals, 16000, self.tgt_sr
+                )
             else:
                 audio_opt = converted_chunks[0]
 
@@ -456,7 +455,7 @@ class VoiceConverter:
             weight_root (str): Path to the model weights.
         """
         self.cpt = (
-            torch.load(weight_root, map_location="cpu")
+            torch.load(weight_root, map_location="cpu", weights_only=True)
             if os.path.isfile(weight_root)
             else None
         )

@@ -94,7 +94,6 @@ def update_sliders(preset):
         values = json.load(json_file)
     return (
         values["pitch"],
-        values["filter_radius"],
         values["index_rate"],
         values["rms_mix_rate"],
         values["protect"],
@@ -123,24 +122,19 @@ def import_presets(file_path):
     return presets
 
 
-def get_presets_data(pitch, filter_radius, index_rate, rms_mix_rate, protect):
+def get_presets_data(pitch, index_rate, rms_mix_rate, protect):
     return {
         "pitch": pitch,
-        "filter_radius": filter_radius,
         "index_rate": index_rate,
         "rms_mix_rate": rms_mix_rate,
         "protect": protect,
     }
 
 
-def export_presets_button(
-    preset_name, pitch, filter_radius, index_rate, rms_mix_rate, protect
-):
+def export_presets_button(preset_name, pitch, index_rate, rms_mix_rate, protect):
     if preset_name:
         file_path = os.path.join(PRESETS_DIR, f"{preset_name}.json")
-        presets_data = get_presets_data(
-            pitch, filter_radius, index_rate, rms_mix_rate, protect
-        )
+        presets_data = get_presets_data(pitch, index_rate, rms_mix_rate, protect)
         with open(file_path, "w", encoding="utf-8") as json_file:
             json.dump(presets_data, json_file, ensure_ascii=False, indent=4)
         return "Export successful"
@@ -303,18 +297,25 @@ def create_folder_and_move_files(folder_name, bin_file, config_file):
     if not folder_name:
         return "Folder name must not be empty."
 
-    folder_name = os.path.join(custom_embedder_root, folder_name)
-    os.makedirs(folder_name, exist_ok=True)
+    folder_name = os.path.basename(folder_name)
+    target_folder = os.path.join(custom_embedder_root, folder_name)
+
+    normalized_target_folder = os.path.abspath(target_folder)
+    normalized_custom_embedder_root = os.path.abspath(custom_embedder_root)
+
+    if not normalized_target_folder.startswith(normalized_custom_embedder_root):
+        return "Invalid folder name. Folder must be within the custom embedder root directory."
+
+    os.makedirs(target_folder, exist_ok=True)
 
     if bin_file:
-        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
-        shutil.copy(bin_file, bin_file_path)
-
+        shutil.copy(bin_file, os.path.join(target_folder, os.path.basename(bin_file)))
     if config_file:
-        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
-        shutil.copy(config_file, config_file_path)
+        shutil.copy(
+            config_file, os.path.join(target_folder, os.path.basename(config_file))
+        )
 
-    return f"Files moved to folder {folder_name}"
+    return f"Files moved to folder {target_folder}"
 
 
 def refresh_formant():
@@ -334,7 +335,9 @@ def refresh_embedders_folders():
 def get_speakers_id(model):
     if model:
         try:
-            model_data = torch.load(os.path.join(now_dir, model), map_location="cpu")
+            model_data = torch.load(
+                os.path.join(now_dir, model), map_location="cpu", weights_only=True
+            )
             speakers_id = model_data.get("speakers_id")
             if speakers_id:
                 return list(range(speakers_id))
@@ -865,17 +868,6 @@ def inference_tab():
                     value=0,
                     interactive=True,
                 )
-                filter_radius = gr.Slider(
-                    minimum=0,
-                    maximum=7,
-                    label=i18n("Filter Radius"),
-                    info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                    ),
-                    value=3,
-                    step=1,
-                    interactive=True,
-                )
                 index_rate = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -911,7 +903,6 @@ def inference_tab():
                     inputs=preset_dropdown,
                     outputs=[
                         pitch,
-                        filter_radius,
                         index_rate,
                         rms_mix_rate,
                         protect,
@@ -922,7 +913,6 @@ def inference_tab():
                     inputs=[
                         preset_name_input,
                         pitch,
-                        filter_radius,
                         index_rate,
                         rms_mix_rate,
                         protect,
@@ -1509,17 +1499,6 @@ def inference_tab():
                     value=0,
                     interactive=True,
                 )
-                filter_radius_batch = gr.Slider(
-                    minimum=0,
-                    maximum=7,
-                    label=i18n("Filter Radius"),
-                    info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                    ),
-                    value=3,
-                    step=1,
-                    interactive=True,
-                )
                 index_rate_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1555,7 +1534,6 @@ def inference_tab():
                     inputs=preset_dropdown,
                     outputs=[
                         pitch_batch,
-                        filter_radius_batch,
                         index_rate_batch,
                         rms_mix_rate_batch,
                         protect_batch,
@@ -1566,7 +1544,6 @@ def inference_tab():
                     inputs=[
                         preset_name_input,
                         pitch,
-                        filter_radius,
                         index_rate,
                         rms_mix_rate,
                         protect,
@@ -2044,7 +2021,6 @@ def inference_tab():
         inputs=[
             terms_checkbox,
             pitch,
-            filter_radius,
             index_rate,
             rms_mix_rate,
             protect,
@@ -2111,7 +2087,6 @@ def inference_tab():
         inputs=[
             terms_checkbox_batch,
             pitch_batch,
-            filter_radius_batch,
             index_rate_batch,
             rms_mix_rate_batch,
             protect_batch,

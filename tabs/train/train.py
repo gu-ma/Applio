@@ -190,18 +190,25 @@ def create_folder_and_move_files(folder_name, bin_file, config_file):
     if not folder_name:
         return "Folder name must not be empty."
 
-    folder_name = os.path.join(custom_embedder_root, folder_name)
-    os.makedirs(folder_name, exist_ok=True)
+    folder_name = os.path.basename(folder_name)
+    target_folder = os.path.join(custom_embedder_root, folder_name)
+
+    normalized_target_folder = os.path.abspath(target_folder)
+    normalized_custom_embedder_root = os.path.abspath(custom_embedder_root)
+
+    if not normalized_target_folder.startswith(normalized_custom_embedder_root):
+        return "Invalid folder name. Folder must be within the custom embedder root directory."
+
+    os.makedirs(target_folder, exist_ok=True)
 
     if bin_file:
-        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
-        shutil.copy(bin_file, bin_file_path)
-
+        shutil.copy(bin_file, os.path.join(target_folder, os.path.basename(bin_file)))
     if config_file:
-        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
-        shutil.copy(config_file, config_file_path)
+        shutil.copy(
+            config_file, os.path.join(target_folder, os.path.basename(config_file))
+        )
 
-    return f"Files moved to folder {folder_name}"
+    return f"Files moved to folder {target_folder}"
 
 
 def refresh_embedders_folders():
@@ -214,7 +221,6 @@ def refresh_embedders_folders():
 
 
 # Export
-## Get Pth and Index Files
 def get_pth_list():
     return [
         os.path.relpath(os.path.join(dirpath, filename), now_dir)
@@ -240,20 +246,36 @@ def refresh_pth_and_index_list():
     )
 
 
-## Export Pth and Index Files
+# Export Pth and Index Files
 def export_pth(pth_path):
-    if pth_path and os.path.exists(pth_path):
+    allowed_paths = get_pth_list()
+    normalized_allowed_paths = [
+        os.path.abspath(os.path.join(now_dir, p)) for p in allowed_paths
+    ]
+    normalized_pth_path = os.path.abspath(os.path.join(now_dir, pth_path))
+
+    if normalized_pth_path in normalized_allowed_paths:
         return pth_path
-    return None
+    else:
+        print(f"Attempted to export invalid pth path: {pth_path}")
+        return None
 
 
 def export_index(index_path):
-    if index_path and os.path.exists(index_path):
+    allowed_paths = get_index_list()
+    normalized_allowed_paths = [
+        os.path.abspath(os.path.join(now_dir, p)) for p in allowed_paths
+    ]
+    normalized_index_path = os.path.abspath(os.path.join(now_dir, index_path))
+
+    if normalized_index_path in normalized_allowed_paths:
         return index_path
-    return None
+    else:
+        print(f"Attempted to export invalid index path: {index_path}")
+        return None
 
 
-## Upload to Google Drive
+# Upload to Google Drive
 def upload_to_google_drive(pth_path, index_path):
     def upload_file(file_path):
         if file_path:
@@ -299,7 +321,7 @@ def train_tab():
                     choices=["RVC", "Applio"],
                     value="RVC",
                     interactive=True,
-                    visible=True,
+                    visible=False,  # to be visible once pretraineds are ready
                 )
             with gr.Column():
                 sampling_rate = gr.Radio(
@@ -317,7 +339,7 @@ def train_tab():
                     choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
                     value="HiFi-GAN",
                     interactive=False,
-                    visible=True,
+                    visible=False,  # to be visible once pretraineds are ready
                 )
         with gr.Accordion(
             i18n("Advanced Settings"),
@@ -892,7 +914,7 @@ def train_tab():
             def toggle_architecture(architecture):
                 if architecture == "Applio":
                     return {
-                        "choices": ["32000", "40000", "44100", "48000"],
+                        "choices": ["32000", "40000", "48000"],
                         "__type__": "update",
                     }, {
                         "interactive": True,
