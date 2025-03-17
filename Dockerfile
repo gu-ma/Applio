@@ -25,8 +25,8 @@ RUN pip install -U --no-cache-dir pip setuptools wheel
 # Change working directory
 WORKDIR /src
 
-# Copy content to image
-COPY . .
+# Copy requirements file
+COPY requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir python-ffmpeg && \
