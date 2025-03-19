@@ -1,7 +1,8 @@
-services:
+name: docker-misc-${CONTAINER_NAME}
 
+services:
   applio:
-    container_name: applio
+    container_name: ${CONTAINER_NAME}
     image: iahispano/applio:latest
     build: .
     working_dir: /app
